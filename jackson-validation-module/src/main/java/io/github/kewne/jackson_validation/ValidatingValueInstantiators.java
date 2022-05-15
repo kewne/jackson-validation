@@ -51,7 +51,7 @@ public class ValidatingValueInstantiators implements ValueInstantiators {
                     var descriptor = beanDesc.getConstraintsForConstructor(c.getParameterTypes());
                     validateConstructorParameters(descriptor, c, args);
                     var result = super.createFromObjectWith(ctxt, args);
-                    validateConstructorResult(descriptor, result);
+                    validateConstructorResult(descriptor, c, result);
                     return result;
                 }
                 default -> super.createFromObjectWith(ctxt, args);
