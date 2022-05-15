@@ -2,22 +2,18 @@ package io.github.kewne.jackson_validation;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.util.Set;
 
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
 import com.fasterxml.jackson.databind.deser.ValueInstantiator;
+import com.fasterxml.jackson.databind.deser.ValueInstantiator.Delegating;
 import com.fasterxml.jackson.databind.deser.ValueInstantiators;
 import com.fasterxml.jackson.databind.deser.impl.PropertyValueBuffer;
-import com.fasterxml.jackson.databind.deser.ValueInstantiator.Delegating;
 
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
-import jakarta.validation.executable.ValidateOnExecution;
-import jakarta.validation.metadata.BeanDescriptor;
 import jakarta.validation.metadata.ConstructorDescriptor;
 
 public class ValidatingValueInstantiators implements ValueInstantiators {
@@ -46,16 +42,14 @@ public class ValidatingValueInstantiators implements ValueInstantiators {
         public Object createFromObjectWith(DeserializationContext ctxt, Object[] args) throws IOException {
             var creator = delegate().getWithArgsCreator();
             var beanDesc = validator.getConstraintsForClass(creator.getDeclaringClass());
-            return switch (creator.getMember()) {
-                case Constructor<?> c -> { 
-                    var descriptor = beanDesc.getConstraintsForConstructor(c.getParameterTypes());
-                    validateConstructorParameters(descriptor, c, args);
-                    var result = super.createFromObjectWith(ctxt, args);
-                    validateConstructorResult(descriptor, c, result);
-                    yield result;
-                }
-                default -> super.createFromObjectWith(ctxt, args);
-            };
+            if (creator.getMember() instanceof Constructor<?> c) {
+                var descriptor = beanDesc.getConstraintsForConstructor(c.getParameterTypes());
+                validateConstructorParameters(descriptor, c, args);
+                var result = super.createFromObjectWith(ctxt, args);
+                validateConstructorResult(descriptor, c, result);
+                return result;
+            }
+            return super.createFromObjectWith(ctxt, args);
         }
 
         private void validateConstructorParameters(ConstructorDescriptor desc, Constructor<?> c, Object[] args) {

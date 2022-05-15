@@ -1,0 +1,6 @@
+{
+    "terminal.integrated.env.windows": {
+        "JAVA_HOME":  "C:\\Program Files\\Zulu\\zulu-17"
+    },
+    "java.configuration.updateBuildConfiguration": "automatic"
+}
