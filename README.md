@@ -21,7 +21,8 @@ mapper.registerModule(new ValidationModule(validator));
 
 ### Annotate class with constraint annotations
 
-You can also apply constraints to constructor arguments:
+You can also apply constraints to constructor arguments
+(and annotate the constructor with `@Valid` so the return valid is validated):
 
 ```java
 public class MyBeanForValidation {
@@ -32,9 +33,28 @@ public class MyBeanForValidation {
     private final Integer age;
 
     @JsonCreator
+    @Valid
     public MyBeanForValidation(@NotNull String name, @NotNull Integer age) {
         this.name = Objects.requireNonNull(name);
         this.age = Objects.requireNonNull(age);
     }
+}
+```
+
+Alternatively, you may also use a delegate creator:
+
+```java
+public class MyBean {
+
+    @JsonCreator
+    public MyBean(Delegate delegate) {
+        // ...
+    }
+}
+
+public class Delegate {
+
+    @NotNull
+    private String name;
 }
 ```
