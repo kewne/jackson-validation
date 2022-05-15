@@ -16,21 +16,20 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
-import jakarta.validation.Validation;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+@ExtendWith(ObjectMapperParameterResolver.class)
 public class ConstructorValidationTest {
 
     private final ObjectMapper mapper;
 
-    public ConstructorValidationTest() {
-        this.mapper = new ObjectMapper();
-        var validator = Validation.buildDefaultValidatorFactory().getValidator();
-        mapper.registerModule(new ValidationModule(validator));
+    public ConstructorValidationTest(ObjectMapper mapper) {
+        this.mapper = mapper;
     }
 
     @Test

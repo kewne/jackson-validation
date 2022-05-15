@@ -44,6 +44,18 @@ public class ValidatingValueInstantiators implements ValueInstantiators {
         }
 
         @Override
+        public Object createUsingDelegate(DeserializationContext ctxt, Object delegate) throws IOException {
+            var violations = validator.validate(delegate);
+            if (!violations.isEmpty()) {
+                throw new ConstraintViolationException(violations);
+            }
+            return super.createUsingDelegate(ctxt, delegate);
+        }
+
+
+
+
+        @Override
         public Object createFromObjectWith(DeserializationContext ctxt, Object[] args) throws IOException {
             var creator = delegate().getWithArgsCreator();
             var beanDesc = validator.getConstraintsForClass(creator.getDeclaringClass());
