@@ -52,7 +52,7 @@ public class ValidatingValueInstantiators implements ValueInstantiators {
                     validateConstructorParameters(descriptor, c, args);
                     var result = super.createFromObjectWith(ctxt, args);
                     validateConstructorResult(descriptor, c, result);
-                    return result;
+                    yield result;
                 }
                 default -> super.createFromObjectWith(ctxt, args);
             };
