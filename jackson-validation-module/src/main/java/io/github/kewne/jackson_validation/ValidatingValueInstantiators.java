@@ -5,6 +5,7 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
@@ -15,6 +16,7 @@ import com.fasterxml.jackson.databind.deser.ValueInstantiator.Delegating;
 import com.fasterxml.jackson.databind.deser.ValueInstantiators;
 import com.fasterxml.jackson.databind.deser.impl.PropertyValueBuffer;
 
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import jakarta.validation.metadata.ConstructorDescriptor;
@@ -47,7 +49,7 @@ public class ValidatingValueInstantiators implements ValueInstantiators {
         public Object createUsingDelegate(DeserializationContext ctxt, Object delegate) throws IOException {
             var violations = validator.validate(delegate);
             if (!violations.isEmpty()) {
-                throw new ConstraintViolationException(violations);
+                throw new FailedValidationException(ctxt.getParser(), "Constructor delegate parameter failed validation", violations);
             }
             return super.createUsingDelegate(ctxt, delegate);
         }
@@ -61,9 +63,9 @@ public class ValidatingValueInstantiators implements ValueInstantiators {
             var beanDesc = validator.getConstraintsForClass(creator.getDeclaringClass());
             if (creator.getMember() instanceof Constructor<?> c) {
                 var descriptor = beanDesc.getConstraintsForConstructor(c.getParameterTypes());
-                validateConstructorParameters(descriptor, c, args);
+                validateConstructorParameters(descriptor, c, args, ctxt);
                 var result = super.createFromObjectWith(ctxt, args);
-                validateConstructorResult(descriptor, c, result);
+                validateConstructorResult(descriptor, c, result, ctxt);
                 return result;
             }
             LOGGER.log(
@@ -73,28 +75,28 @@ public class ValidatingValueInstantiators implements ValueInstantiators {
             return super.createFromObjectWith(ctxt, args);
         }
 
-        private void validateConstructorParameters(ConstructorDescriptor desc, Constructor<?> c, Object[] args) {
+        private <T> void validateConstructorParameters(ConstructorDescriptor desc, Constructor<T> c, Object[] args, DeserializationContext ctxt) throws FailedValidationException {
             var execValidator = validator.forExecutables();
             if (desc == null) {
                 return;
             }
             if (desc.hasConstrainedParameters()) {
-                var violations = execValidator.validateConstructorParameters(c, args);
+                var violations = execValidator.<Object>validateConstructorParameters(c, args);
                 if (!violations.isEmpty()) {
-                    throw new ConstraintViolationException(violations);
+                    throw new FailedValidationException(ctxt.getParser(), "Constructor parameters failed validation", violations);
                 }
             }
         }
 
-        private void validateConstructorResult(ConstructorDescriptor desc, Constructor<?> c, Object result) {
+        private void validateConstructorResult(ConstructorDescriptor desc, Constructor<?> c, Object result, DeserializationContext ctxt) throws FailedValidationException {
             var execValidator = validator.forExecutables();
             if (desc == null) {
                 return;
             }
             if (desc.hasConstrainedReturnValue()) {
-                var violations = execValidator.validateConstructorReturnValue(c, result);
+                var violations = execValidator.<Object>validateConstructorReturnValue(c, result);
                 if (!violations.isEmpty()) {
-                    throw new ConstraintViolationException(violations);
+                    throw new FailedValidationException(ctxt.getParser(), "Constructor return value failed validation", violations);
                 }
             }
         }

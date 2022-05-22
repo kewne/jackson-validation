@@ -35,14 +35,13 @@ public class ConstructorValidationTest {
     @Test
     public void validates_json_creator_parameters() {
         var exception = assertThrows(
-                JsonMappingException.class,
+                FailedValidationException.class,
                 () -> mapper.readValue("""
                         {
 
                         }""", BeanWithConstructor.class));
 
-        var violations = assertInstanceOf(ConstraintViolationException.class, exception.getCause())
-                .getConstraintViolations()
+        var violations = exception.getViolations()
                 .stream()
                 .collect(groupingBy(v -> StreamSupport.stream(v.getPropertyPath().spliterator(), false)
                         .map(n -> n.getName())
@@ -56,14 +55,13 @@ public class ConstructorValidationTest {
     @Test
     public void validates_json_creator_return_value() {
         var exception = assertThrows(
-                JsonMappingException.class,
+                FailedValidationException.class,
                 () -> mapper.readValue("""
                         {
                             "name": ""
                         }""", BeanWithConstructor.class));
 
-        var violations = assertInstanceOf(ConstraintViolationException.class, exception.getCause())
-                .getConstraintViolations()
+        var violations = exception.getViolations()
                 .stream()
                 .collect(groupingBy(v -> StreamSupport.stream(v.getPropertyPath().spliterator(), false)
                         .map(n -> n.getName())

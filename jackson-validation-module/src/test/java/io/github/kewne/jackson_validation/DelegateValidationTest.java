@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -32,13 +31,13 @@ public class DelegateValidationTest {
 
     @Test
     public void validates_delegate() {
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class,
+        var exception = assertThrows(
+                FailedValidationException.class,
                 () -> mapper.readValue("""
                         {
 
                         }""", DelegateCreator.class));
-        var violations = exception.getConstraintViolations()
+        var violations = exception.getViolations()
                 .stream()
                 .collect(groupingBy(v -> StreamSupport.stream(v.getPropertyPath().spliterator(), false)
                         .map(n -> n.getName())
