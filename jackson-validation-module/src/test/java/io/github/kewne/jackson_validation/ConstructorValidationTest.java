@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -12,13 +13,11 @@ import java.util.stream.StreamSupport;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonCreator.Mode;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -33,7 +32,7 @@ public class ConstructorValidationTest {
     }
 
     @Test
-    public void validates_json_creator_parameters() {
+    public void validates_basic_parameters() {
         var exception = assertThrows(
                 FailedValidationException.class,
                 () -> mapper.readValue("""
@@ -41,45 +40,21 @@ public class ConstructorValidationTest {
 
                         }""", BeanWithConstructor.class));
 
-        var violations = exception.getViolations()
-                .stream()
-                .collect(groupingBy(v -> StreamSupport.stream(v.getPropertyPath().spliterator(), false)
-                        .map(n -> n.getName())
-                        .collect(Collectors.joining("."))));
-        var nameViolations = violations.get("BeanWithConstructor.arg0");
+        var jsonViolations = exception.getJsonViolations();
+        var nameViolations = List.copyOf(jsonViolations.getNode("json_name").getViolations());
         assertEquals(1, nameViolations.size());
         var v = nameViolations.get(0);
         assertInstanceOf(NotNull.class, v.getConstraintDescriptor().getAnnotation());
     }
 
-    @Test
-    public void validates_json_creator_return_value() {
-        var exception = assertThrows(
-                FailedValidationException.class,
-                () -> mapper.readValue("""
-                        {
-                            "name": ""
-                        }""", BeanWithConstructor.class));
-
-        var violations = exception.getViolations()
-                .stream()
-                .collect(groupingBy(v -> StreamSupport.stream(v.getPropertyPath().spliterator(), false)
-                        .map(n -> n.getName())
-                        .collect(Collectors.joining("."))));
-        var nameViolations = violations.get("BeanWithConstructor.<return value>.name");
-        assertEquals(1, nameViolations.size());
-        var v = nameViolations.get(0);
-        assertInstanceOf(Size.class, v.getConstraintDescriptor().getAnnotation());
-    }
-
     public static final class BeanWithConstructor {
 
-        @Size(min = 2)
         private final String name;
 
         @JsonCreator(mode = Mode.PROPERTIES)
         @Valid
-        public BeanWithConstructor(@NotNull @JsonProperty("name") String name) {
+        public BeanWithConstructor(
+                @NotNull @Size(min = 2) @JsonProperty("json_name") String name) {
             this.name = Objects.requireNonNull(name);
         }
     }
