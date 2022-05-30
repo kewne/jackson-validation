@@ -20,6 +20,7 @@ public class ValidationModule extends SimpleModule {
     public void setupModule(SetupContext context) {
         super.setupModule(context);
         context.addValueInstantiators(new ValidatingValueInstantiators(validator));
+        //context.addBeanDeserializerModifier(new ValidationAwareBeanDeserializerModifier());
     }
 
 }
